@@ -1,0 +1,48 @@
+body[b-2n72gsi3hk] {
+}
+
+
+.btn-submit[b-2n72gsi3hk] {
+    padding: 10px;
+    display: inline-block;
+    border: 2px solid forestgreen;
+    border-radius: 2px;
+    margin: 4px 2px;
+    font-size: 4.8px;
+    height: 40px;
+    width: 120px;
+    transition-duration: 0.2s;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    background-color: white;
+    color: forestgreen;
+}
+
+
+    .btn-submit:hover[b-2n72gsi3hk] {
+        background-color: forestgreen;
+        color: white;
+    }
+
+.btn-signout[b-2n72gsi3hk] {
+    padding: 10px;
+    display: inline-block;
+    border: 2px solid orangered;
+    border-radius: 2px;
+    margin: 4px 2px;
+    font-size: 4.8px;
+    height: 40px;
+    width: 120px;
+    transition-duration: 0.2s;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    background-color: white;
+    color: orangered;
+}
+
+.btn-signout:hover[b-2n72gsi3hk] {
+    background-color: orangered;
+    color: white;
+}

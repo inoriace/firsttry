@@ -1,0 +1,60 @@
+body[b-1tyfi12p3e] {
+}
+
+.grid-container[b-1tyfi12p3e] {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr 1fr 2fr 1fr;
+    background-color: aliceblue;
+    padding: 10px;
+}
+
+.grid-item[b-1tyfi12p3e]{
+    padding:10px;
+}
+
+.btn[b-1tyfi12p3e] {
+    padding: 10px;
+    display: inline-block;
+    border: 2px solid;
+    border-radius: 2px;
+    margin: 4px 2px;
+
+    transition-duration: 0.2s;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-getmoney[b-1tyfi12p3e] {
+    font-size: 8px;
+    height: 40px;
+    width: 120px;
+    background-color: white;
+    color: aqua;
+}
+
+    .btn-getmoney:hover[b-1tyfi12p3e] {
+        background-color: aqua;
+        color: white;
+    }
+
+.buybutton1[b-1tyfi12p3e] {
+    background-color: white;
+    color: forestgreen;
+    height: 100px;
+    width: 200px;
+    font-size: 24px;
+}
+
+.buybutton1:hover[b-1tyfi12p3e]{
+    background-color:forestgreen;
+    color:white;
+}
+
+.btn-submit[b-1tyfi12p3e] {
+    font-size: 8px;
+    height: 40px;
+    width: 80px;
+    background-color: white;
+    color: forestgreen;
+}

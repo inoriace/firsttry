@@ -1,0 +1,54 @@
+body[b-0fz6tzxmxg] {
+}
+
+
+.grid-container[b-0fz6tzxmxg] {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr 1fr 1fr 1fr 1fr;
+    background-color: aliceblue;
+    padding: 10px;
+}
+
+.grid-item[b-0fz6tzxmxg] {
+    padding: 10px;
+}
+
+
+.btn[b-0fz6tzxmxg] {
+    padding: 10px;
+    display: inline-block;
+    border: 2px solid;
+    border-radius: 2px;
+    margin: 4px 2px;
+    
+    transition-duration: 0.2s;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn-delete[b-0fz6tzxmxg] {
+    font-size: 24px;
+    height: 100px;
+    width: 200px;
+    background-color: white;
+    color: red;
+}
+
+    .btn-delete:hover[b-0fz6tzxmxg] {
+        background-color: red;
+        color: white;
+    }
+
+.btn-checkout[b-0fz6tzxmxg] {
+    font-size: 8px;
+    height: 40px;
+    width: 100px;
+    background-color: white;
+    color: blue;
+}
+
+    .btn-checkout:hover[b-0fz6tzxmxg] {
+        background-color: blue;
+        color: white;
+    }

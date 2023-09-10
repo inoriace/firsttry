@@ -1,0 +1,13 @@
+body[b-un5puyd9k5] {
+}
+
+.grid-container[b-un5puyd9k5] {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr 1fr 1fr 1fr 1fr;
+    background-color: aliceblue;
+    padding: 10px;
+}
+
+.grid-item[b-un5puyd9k5] {
+    padding: 10px;
+}
