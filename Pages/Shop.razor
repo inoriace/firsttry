@@ -1,0 +1,191 @@
+﻿@page "/shop"
+
+
+
+<PageTitle>shop</PageTitle>
+@inject NavigationManager NavigationManager
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject IJSRuntime JSRuntime
+
+<h1>Shop</h1>
+
+<div class="grid-container">
+
+	@if (!balance.HasValue)
+	{
+		<p><strong>Balance:loading..</strong></p>
+	}
+	else
+	{
+
+		<div class="grid-item"><p><strong>Balance:@balance</strong></p></div>
+		<div class="grid-item"><button type="button" class="btn btn-getmoney" @onclick="givemoney">getsomemoney!</button></div>
+		<div class="grid-item"></div>
+		<div class="grid-item"><label>Search by name:</label></div>
+		<div class="grid-item">
+			<EditForm Model="@searchModel" OnValidSubmit="@search" @onreset="resetsearch">
+				<DataAnnotationsValidator/>
+				<InputText @bind-Value=searchModel.searchword/>
+				<ValidationMessage For="()=>searchModel.searchword" />
+				<button type="reset" class="btn btn-submit">Reset</button>
+				<button type="submit" class="btn btn-submit">Search</button>
+				
+			</EditForm>
+		</div>
+		<div class="grid-item"></div>
+	}
+	
+
+
+	@if(commodities==null)
+	{
+		<p><strong>Commodities:loading......</strong></p>
+	}
+	else
+	{
+		@foreach(Models.Commodity commodity in commodities)
+		{
+			<div class="grid-item"><label>Id:@commodity.Id</label></div>
+			<div class="grid-item"><img src=@commodity.Photoref alt=@commodity.Name width="300" height="400" /></div>
+			<div class="grid-item"><label>@commodity.Name</label></div>
+			<div class="grid-item"></div>
+			<div class="grid-item"><button type="button" class="btn buybutton1" @onclick="() => buy(commodity.Id)">$@commodity.Price</button></div>
+			<div class="grid-item"></div>
+		}
+	}
+	
+	
+
+
+</div>
+
+
+
+
+
+
+@code {
+	public int? balance;
+	public int cartcount;
+	public int moneyinc = 100;
+	public List<Models.Commodity> commodities=null!;
+	public List<Models.Commodity> original_commodities=null!;
+	public string currentusername=null!;
+	public List<Models.Shopcart>? Shopcarts;
+	SearchModel searchModel = new SearchModel();
+	Models.CommodityDbContext dbcontext = new Models.CommodityDbContext();
+
+	public class SearchModel
+	{
+		[Required]
+		[StringLength(30, ErrorMessage = "searchword too long(up to 30)")]
+		public string searchword { get; set; } = null!;
+	}
+	public void search()
+	{
+		commodities = original_commodities.Where(s => s.Name.Contains(searchModel.searchword) == true).ToList();
+		StateHasChanged();
+	}
+
+	public void resetsearch()
+	{
+		searchModel.searchword = null!;
+		commodities = original_commodities.ToList();
+		StateHasChanged();
+	}
+
+	public async Task getbalance()
+	{
+		try
+		{
+			var userdb=dbcontext.Users.Where(s => s.Username==currentusername).First();//will throw exception
+
+			balance = userdb.Balance;
+		}
+		catch(InvalidOperationException e)
+		{
+			await JSRuntime.InvokeAsync<object>("alert", "sign up first!!");
+			//jump to sign up
+		}
+
+		return;
+	}
+	public async Task setbalance()
+	{
+		var userdb = await dbcontext.Users.Where(s => s.Username==currentusername).FirstAsync();
+		userdb.Balance = balance.Value ;
+		await dbcontext.SaveChangesAsync();
+	}
+	public async Task givemoney()
+	{
+		await getbalance();
+		balance += moneyinc;
+		await setbalance();
+	}
+
+
+
+	public async Task buy(int Id)
+	{
+		await getbalance();
+		var commodity = await dbcontext.Commodities.Where(s => s.Id == Id).FirstAsync();
+		if(balance>=commodity.Price)
+		{
+			balance -= commodity.Price;
+			await setbalance();
+			Models.Shopcart shopcart = new Models.Shopcart();
+			shopcart.CommodityId = commodity.Id;
+			var nowuser=await dbcontext.Users.Where(s=>s.Username==currentusername).FirstAsync();
+			shopcart.UserId = nowuser.Id;
+			shopcart.Id = cartcount + 1;
+			cartcount++;
+			dbcontext.Shopcarts.Add(shopcart);
+			dbcontext.SaveChanges();
+			await JSRuntime.InvokeAsync<object>("alert", "buy success");
+		}
+		else
+		{
+			await JSRuntime.InvokeAsync<object>("alert", "这个东西你买不起啊喂");
+		}
+	}
+
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if(firstRender)
+		{
+			//get username
+			var result = await ProtectedSessionStore.GetAsync<string>("username");
+			if(result.Success)
+			{
+				currentusername = result.Value;
+			}
+			else
+			{
+				await JSRuntime.InvokeAsync<object>("alert", "sign up first!!");
+				NavigationManager.NavigateTo(NavigationManager.BaseUri, true);
+				return;
+			}
+			//getbalance
+			await getbalance();
+			//get cartcount
+			Shopcarts = await dbcontext.Shopcarts.ToListAsync();
+			if(Shopcarts.Count==0)
+			{
+				cartcount = 0;
+			}
+			else
+			{
+				cartcount = Shopcarts.Max(new Models.ShopcartComparer()).Id;
+			}
+			//get commodities
+			original_commodities = await dbcontext.Commodities.ToListAsync();
+			commodities = original_commodities.ToList();
+			StateHasChanged();
+		}
+		
+		return;
+	}
+	
+}
+

@@ -1,0 +1,139 @@
+﻿@page "/shoppingcart"
+
+@inject NavigationManager NavigationManager
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject IJSRuntime JSRuntime
+
+<PageTitle>shopping cart</PageTitle>
+
+<h1>Shopping cart</h1>
+
+
+<div class="grid-container">
+	@if (currentShopcart == null)
+	{
+		<p>Loading</p>
+	}
+
+	else
+	{
+		if(currentShopcart.Count==0)
+		{
+			<p>It's empty here. Go shop!</p>
+		}
+		else
+		{
+			@foreach(var shopcartcommodity in currentShopcart)
+			{
+				<div class="grid-item"><label>@shopcartcommodity.Id</label></div>
+				<div class="grid-item"><img src=@GetCommodity(shopcartcommodity.CommodityId).Photoref alt=@GetCommodity(shopcartcommodity.CommodityId).Name width="300" height="400" /></div>
+				<div class="grid-item"><label>@GetCommodity(shopcartcommodity.CommodityId).Name</label></div>
+				<div class="grid-item"><label class="label-price">$@GetCommodity(shopcartcommodity.CommodityId).Price</label></div>
+				<div class="grid-item"><button type="button" class="btn btn-delete" @onclick="()=>deleteCommodity(shopcartcommodity.Id)">Delete</button></div>
+				<div class="grid-item"></div>
+				<div class="grid-item"></div>
+			}
+		}
+
+	}
+
+
+	<div class="grid-item"></div>
+	<div class="grid-item"></div>
+	<div class="grid-item"></div>
+	<div class="grid-item"></div>
+	<div class="grid-item"></div>
+	<div class="grid-item"><button class="btn btn-checkout" @onclick="check_out">check out</button></div>
+	<div class="grid-item"></div>
+</div>
+
+@code {
+	string currentusername=null!;
+	Models.CommodityDbContext dbContext = new Models.CommodityDbContext();
+	List<Models.Shopcart>? currentShopcart;
+	List<Models.Commodity>? commoditylist;
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if(firstRender)
+		{
+			var result = await ProtectedSessionStore.GetAsync<string>("username");
+			if (result.Success)
+			{
+				currentusername = result.Value;
+			}
+			else
+			{
+				await JSRuntime.InvokeAsync<object>("alert", "sign up first!!");
+				NavigationManager.NavigateTo(NavigationManager.BaseUri, true);
+				return;
+			}
+
+			var currentuser = await dbContext.Users.Where(s => s.Username == currentusername).FirstAsync();
+			currentShopcart = await dbContext.Shopcarts.Where(s => s.UserId == currentuser.Id).ToListAsync();
+			commoditylist = await dbContext.Commodities.ToListAsync();
+
+			await base.OnInitializedAsync();
+			StateHasChanged();
+		}
+		return;
+	}
+	public async Task check_out()
+	{
+		if(currentShopcart.Count==0)
+		{
+			await JSRuntime.InvokeAsync<object>("alert", "nothing to check out!");
+			return;
+		}
+		foreach(var cartcommodity in currentShopcart)
+		{
+			var currentOrderlist = await dbContext.Orders.ToListAsync();
+			var neworder = new Models.Order();
+			//orderid
+			if(currentOrderlist.Count==0)
+			{
+				neworder.Id = 1;
+			}
+			else
+			{
+				neworder.Id = currentOrderlist.Max(new Models.OrderComparer()).Id + 1;
+			}
+
+			neworder.UserId = cartcommodity.UserId;
+			neworder.CommodityId = cartcommodity.CommodityId;
+			neworder.OrderTime = DateTime.Now;
+
+			await dbContext.Orders.AddAsync(neworder);
+			await dbContext.SaveChangesAsync();
+		}
+		dbContext.Shopcarts.RemoveRange(currentShopcart);
+		await dbContext.SaveChangesAsync();
+		currentShopcart.Clear();
+		await JSRuntime.InvokeAsync<object>("alert", "check out success");
+		StateHasChanged();
+	}
+	public Models.Commodity? GetCommodity(int Id)
+	{
+		try
+		{
+			var commodity=commoditylist.Where(s => s.Id == Id).First();
+			return commodity;
+		}
+		catch(InvalidOperationException e)
+		{
+			return null;
+		}
+	}
+
+	public async Task deleteCommodity(int shopcartId)
+	{
+		var currentuser = await dbContext.Users.Where(s => s.Username == currentusername).FirstAsync();
+		var deletingcart = await dbContext.Shopcarts.Where(s => s.Id == shopcartId).FirstAsync();
+		var deletingcommodity = await dbContext.Commodities.Where(s => s.Id == deletingcart.CommodityId).FirstAsync();
+		currentuser.Balance += deletingcommodity.Price;
+		dbContext.Shopcarts.Remove(deletingcart);
+		dbContext.SaveChanges();
+		currentShopcart.Remove(deletingcart);
+		await JSRuntime.InvokeAsync<object>("alert", "delete success");
+		StateHasChanged();
+	}
+}

@@ -1,0 +1,87 @@
+﻿@page "/order"
+
+<PageTitle>Order</PageTitle>
+
+@inject NavigationManager NavigationManager
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject IJSRuntime JSRuntime
+
+<h2>Order</h2>
+
+<div class="grid-container">
+	@if (currentOrderlist == null)
+	{
+		<p>Loading</p>
+	}
+
+	else
+	{
+		if (currentOrderlist.Count == 0)
+		{
+			<p>It's empty here. Go shop!</p>
+		}
+		else
+		{
+			@foreach (var Ordercommodity in currentOrderlist)
+			{
+				<div class="grid-item"><label>Id:@Ordercommodity.Id</label></div>
+				<div class="grid-item"><img src=@GetCommodity(Ordercommodity.CommodityId).Photoref alt=@GetCommodity(Ordercommodity.CommodityId).Name width="300" height="400" /></div>
+				<div class="grid-item"><label>@GetCommodity(Ordercommodity.CommodityId).Name</label></div>
+				<div class="grid-item"><label class="label-price">$@GetCommodity(Ordercommodity.CommodityId).Price</label></div>
+				<div class="grid-item"><label>@Ordercommodity.OrderTime</label></div>
+				<div class="grid-item"></div>
+				<div class="grid-item"></div>
+
+			}
+		}
+
+	}
+</div>
+
+
+
+@code {
+	string currentusername = null!;
+	Models.CommodityDbContext dbContext = new Models.CommodityDbContext();
+	List<Models.Commodity>? commoditylist;
+	List<Models.Order>? currentOrderlist;
+
+	public Models.Commodity? GetCommodity(int Id)
+	{
+		try
+		{
+			var commodity = commoditylist.Where(s => s.Id == Id).First();
+			return commodity;
+		}
+		catch (InvalidOperationException e)
+		{
+			return null;
+		}
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			var result = await ProtectedSessionStore.GetAsync<string>("username");
+			if (result.Success)
+			{
+				currentusername = result.Value;
+			}
+			else
+			{
+				await JSRuntime.InvokeAsync<object>("alert", "sign up first!!");
+				NavigationManager.NavigateTo(NavigationManager.BaseUri, true);
+				return;
+			}
+
+			var currentuser = await dbContext.Users.Where(s => s.Username == currentusername).FirstAsync();
+			currentOrderlist = await dbContext.Orders.Where(s => s.UserId == currentuser.Id).ToListAsync();
+			commoditylist = await dbContext.Commodities.ToListAsync();
+
+			await base.OnInitializedAsync();
+			StateHasChanged();
+		}
+		return;
+	}
+}

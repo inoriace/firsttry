@@ -1,0 +1,137 @@
+﻿@page "/"
+
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject IJSRuntime JSRuntime
+<PageTitle>Signup</PageTitle>
+
+<h3>Signup</h3>
+
+@if(login_in.HasValue)
+{
+	if(login_in.Value==true)
+	{
+		<p>you've been loginning in.</p>
+		<p><strong>username:@currentusername</strong></p>
+		<button class="btn-signout" @onclick="Signout">Sign out</button>
+	}
+	else
+	{
+		<!--register/login-->
+		<EditForm Model="@userinput" OnValidSubmit="@Submit" OnInvalidSubmit="@Invalidsubmit">
+			<DataAnnotationsValidator/>
+			<ValidationSummary/>
+			<div>
+				<label for="usernameinput">Name:</label>
+				<InputText @bind-Value=userinput.username id="usernameinput" /><br />
+				<ValidationMessage For="()=>userinput.username"/>
+			</div>
+			<div>
+				<label for="passwordinput">Password:</label>
+				<InputText @bind-Value=userinput.password id="passwordinput" /><br />
+				<ValidationMessage For="()=>userinput.password"/>
+			</div>
+			<div>
+				<button type="submit" class="btn-submit">Register/Login</button>
+			</div>
+		</EditForm>
+	}
+}
+else
+{
+	<p><strong>Loading...</strong></p>
+}
+
+
+
+@code {
+	bool? login_in;
+	string? currentusername;
+	Inputmodel userinput = new Inputmodel();
+	Models.CommodityDbContext dbContext = new Models.CommodityDbContext();
+
+	private async void Signout()
+	{
+		await ProtectedSessionStore.DeleteAsync("username");
+		login_in = false;
+		await JSRuntime.InvokeAsync<object>("alert", "sign out success");
+		StateHasChanged();
+	}
+	private async void Submit()
+	{
+		try
+		{
+			var userresult = await dbContext.Users.Where(s => s.Username == userinput.username).FirstAsync();//will throw exception
+
+			if (userinput.password == userresult.Password)//login in
+			{
+				await ProtectedSessionStore.SetAsync("username", userinput.username);
+				login_in = true;
+				currentusername = userinput.username;
+				await JSRuntime.InvokeAsync<object>("alert", "Login Success");
+				StateHasChanged();
+			}
+			else
+			{
+				await JSRuntime.InvokeAsync<object>("alert", "incorrrect password or change your username to register");
+			}
+		}
+		catch(InvalidOperationException e)
+		{
+			var NewUser = new Models.User();
+			NewUser.Username = userinput.username;
+			NewUser.Password = userinput.password;
+
+			var userlist = await dbContext.Users.ToListAsync();
+			if(userlist.Count==0)
+			{
+				NewUser.Id = 1;
+			}
+			else
+			{
+				NewUser.Id = userlist.Max(new Models.UserIdComparer()).Id+1;
+			}
+			dbContext.Users.Add(NewUser);
+			dbContext.SaveChanges();
+			login_in = true;
+			currentusername = userinput.username;
+			await ProtectedSessionStore.SetAsync("username", userinput.username);
+			await JSRuntime.InvokeAsync<object>("alert", "Register Success!");
+			StateHasChanged();
+		}
+	}
+	private async void Invalidsubmit()
+	{
+		await JSRuntime.InvokeAsync<object>("alert", "need valid input");
+	}
+	public class Inputmodel
+	{
+		[Required]
+		[StringLength(16,ErrorMessage = "username too long(up to 16)")]
+		public string username { get; set; } = null!;
+		[Required]
+		[StringLength(20,ErrorMessage = "password too long(up to 20)")]
+		public string password { get; set; } = null!;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		//get login status
+		if(firstRender)
+		{
+			var userstatus = await ProtectedSessionStore.GetAsync<string>("username");
+
+			if(userstatus.Success)
+			{
+				login_in = true;
+				currentusername = userstatus.Value;
+				StateHasChanged();
+			}
+			else
+			{
+				login_in = false;
+				StateHasChanged();
+			}
+			return;			
+		}
+	}
+}
